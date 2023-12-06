@@ -1,1 +1,2 @@
-kaggle/input/blood-vessel-segmentation/*
+kaggle/input/blood-vessel-segmentation/test/
+kaggle/input/blood-vessel-segmentation/train/
