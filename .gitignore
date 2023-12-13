@@ -1,2 +1,7 @@
 kaggle/input/blood-vessel-segmentation/test/
 kaggle/input/blood-vessel-segmentation/train/
+
+data/
+kaggle/input/
+
+models/
