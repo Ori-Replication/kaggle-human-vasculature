@@ -425,9 +425,9 @@ for idx, mask_pred in enumerate(outputs):
     # 将新行追加到submission_df DataFrame
     submission_df = pd.concat([submission_df, pd.DataFrame(submission_row, index = [0])], axis=0, ignore_index=True)
 
-Kaggle = False
 
-if not Kaggle:
+
+if not CFG.kaggle:
     submission_df.to_csv('./data/predictions/prediction' + current_date +'-'+ current_time+ '.csv', index=False)
-if Kaggle:
+if CFG.kaggle:
     submission_df.to_csv('submission.csv', index=False)

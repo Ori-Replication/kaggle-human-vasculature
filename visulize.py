@@ -2,6 +2,7 @@ import os
 import vtk
 from PIL import Image
 import numpy as np
+from utils.utils import rle_decode, read_rle_from_path
 def read_images(folder_path):
     """从指定文件夹中读取所有.tif格式的图片并返回3D numpy数组"""
     file_names = sorted([f for f in os.listdir(folder_path) if f.endswith('.tif')])
@@ -140,27 +141,14 @@ def rle_decode(mask_rle, shape):
 
 
 
-# ... (保留先前定义的函数: read_images, visualize_volumes)
 
 def main(rle_csv_path):
-    # 从CSV文件中读取RLE数据
-    rle_dataframe = pd.read_csv(rle_csv_path)
-    # 假设CSV文件有 columns ['id', 'rle'] 并且图像的shape是height, width
-    height, width = 1041, 1511  # 替换为实际图像的高和宽
 
-    # 初始化一个空的列表来保存所有解码后的图像
-    decoded_images = []
-
-    # 循环遍历DataFrame中的每一行
-    for index, row in rle_dataframe.iterrows():
-        # 解码RLE到二维图像数组
-        mask = rle_decode(row['rle'], shape=(height, width))
-        # 添加到decoded_images列表中
-        decoded_images.append(mask)
-
+    height, width = 1041, 1511  
     # 将2D图像堆叠成3D数据体
-    volume_data = np.stack(decoded_images, axis=0)
+    volume_data = read_rle_from_path(rle_csv_path, height, width)
     volume_data = volume_data * 255
+    print(volume_data.shape)
     # 可视化体数据
     visualize_volumes(volume_data)
     print('Visualize done')
