@@ -99,7 +99,7 @@ def read_rle_from_path(rle_csv_path, height, width) -> np.ndarray :
         decoded_images.append(mask)
     volume_data = np.stack(decoded_images, axis=0)
     return volume_data
--
+
 def read_images(folder_path):
     """从指定文件夹中读取所有.tif格式的图片并返回3D numpy数组"""
     file_names = sorted([f for f in os.listdir(folder_path) if f.endswith('.tif')])
