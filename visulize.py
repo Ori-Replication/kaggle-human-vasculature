@@ -99,7 +99,7 @@ def main(folder_path):
     print('visualize done')
 
 # if __name__ == "__main__":
-#     folder_path = 'E:/CSworks/kaggle_blood_vessel/kaggle/input/blood-vessel-segmentation/train/kidney_3_sparse/labels'  # Replace with your folder path
+#     folder_path = 'E:/CSworks/kaggle_blood_vessel/kaggle/input/blood-vessel-segmentation/train/kidney_2/labels'  # Replace with your folder path
 #     main(folder_path)
 
 
@@ -166,5 +166,6 @@ def main(rle_csv_path):
     print('Visualize done')
 
 if __name__ == "__main__":
-    rle_csv_path = './data/predictions/prediction2023-12-1216-52-47.csv'
+    #'./data/predictions/prediction2023-12-13-22-29-30.csv'
+    rle_csv_path = './data/predictions/prediction2023-12-13-22-29-30.csv'
     main(rle_csv_path)
