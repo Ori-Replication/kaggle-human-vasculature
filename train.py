@@ -5,15 +5,29 @@ import torch.nn as nn
 from tqdm import tqdm
 import os
 
-from utils.utils import Config, setup_seeds, min_max_normalization
+from utils.utils import Config, min_max_normalization, setup_seeds, get_date_time
 from utils.dataset import KaggleDataset
 from models.unet import build_model
 from optimizer.loss import surface_dice
 
+class DiceLoss(nn.Module):
+    def __init__(self, smooth=0.00001):
+        super(DiceLoss, self).__init__()
+        self.smooth = smooth
+
+    def forward(self, inputs, targets):
+        inputs = torch.sigmoid(inputs)
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+
+        intersection = (inputs * targets).sum()                            
+        dice = (2.*intersection + self.smooth)/(inputs.sum() + targets.sum() + self.smooth)  
+        
+        return 1 - dice
+
 def main():
     cfg = Config('configs/train_config.yaml')
     setup_seeds(cfg)
-
     train_dataset = KaggleDataset(cfg)
     train_loader = DataLoader(train_dataset, batch_size=16, num_workers=cfg.num_workers)
     val_dataset = KaggleDataset(cfg, mode='val')
@@ -22,17 +36,19 @@ def main():
     model = build_model(cfg)
     model = DataParallel(model)
 
-    loss_fn = nn.BCEWithLogitsLoss()
+    loss_fn = DiceLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr)
     scaler = torch.cuda.amp.GradScaler()
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=cfg.lr,
-                                                steps_per_epoch=len(train_dataset), epochs=cfg.epochs+1,
+                                                steps_per_epoch=len(train_loader), epochs=cfg.epochs+1,
                                                 pct_start=0.1)
+    
+    date, time = get_date_time()
     
     for epoch in range(cfg.epochs):
         train_one_epoch(model, train_loader, loss_fn, optimizer, scaler, scheduler, epoch, cfg)
         val(model, val_loader, loss_fn, epoch, cfg)
-        torch.save(model.state_dict(), os.path.join(cfg.output_path, f'{cfg.model_name}_epoch_{epoch}.pt'))
+        torch.save(model.state_dict(), os.path.join(cfg.output_path, f'{cfg.model_name}_{date}_{time}_epoch_{epoch}.pt'))
 
 
 

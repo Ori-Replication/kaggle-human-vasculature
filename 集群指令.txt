@@ -1,0 +1,1 @@
+qsub -N BV -l nodes=sist-gpu02:ppn=8 -S /bin/bash -j oe -q sist -l walltime=360:00:00 -I

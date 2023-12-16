@@ -1,6 +1,7 @@
 kaggle/input/blood-vessel-segmentation/test/
 kaggle/input/blood-vessel-segmentation/train/
 kaggle/working/checkpoints/se_resnet50-ce0d4300.pth
+kaggle/working/
 
 data/
 kaggle/input/

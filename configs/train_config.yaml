@@ -12,7 +12,7 @@ drop: ['kidney_3_dense']
 num_workers: 2
 epochs: 10
 lr: 6e-5
-seed: 42
+seed: 3407
 device: 'cuda'
 
 output_path: 'kaggle/working/checkpoints'

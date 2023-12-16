@@ -22,7 +22,7 @@ class Config:
                     A.GaussianBlur(),
                     A.MotionBlur()], p=0.4),
             A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
-            # A.RandomBrightness(limit=0.2, p=0.5), 
+            # A.RandomBrightnessContrast(limit=0.2, p=0.5), 
             ToTensorV2(transpose_mask=True)]
         
         val_aug_list = [ToTensorV2(transpose_mask=True)]
@@ -99,10 +99,17 @@ def read_rle_from_path(rle_csv_path, height, width) -> np.ndarray :
         decoded_images.append(mask)
     volume_data = np.stack(decoded_images, axis=0)
     return volume_data
--
+
 def read_images(folder_path):
     """从指定文件夹中读取所有.tif格式的图片并返回3D numpy数组"""
     file_names = sorted([f for f in os.listdir(folder_path) if f.endswith('.tif')])
     images = [Image.open(os.path.join(folder_path, name)) for name in file_names]
     stacked_images = np.stack([np.array(image) for image in images], axis=0)
     return stacked_images
+
+
+def get_date_time():
+    import datetime
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    current_time = datetime.datetime.now().strftime("%H-%M-%S")
+    return current_date, current_time

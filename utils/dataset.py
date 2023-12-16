@@ -26,7 +26,7 @@ class LoadData(Dataset):
         return img
     
 def load_data(path,s):
-    loaded_datas = LoadData(path,s)
+    loaded_datas = LoadData(path,s) 
     data_loader = DataLoader(loaded_datas, batch_size=16, num_workers=0)
     data=[]
     for x in tqdm(data_loader):

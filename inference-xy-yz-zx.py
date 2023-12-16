@@ -32,7 +32,7 @@ class CFG:
     valid_id = 1
     batch=64
     th_percentile = 0.002#0.005 /public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/input/blood-vessel-segmentation/train/kidney_2
-    model_path=["./models/baseline-v0-2023-12-20/se_resnet50_9_loss0.01_score0.76_val_loss0.01_val_scorenan.pt"]
+    model_path=["./kaggle/working/checkpoints/Unet_epoch_9.pt"]
     test_data_path="./kaggle/input/blood-vessel-segmentation/train/kidney_2"
     submit_test_data_path="./kaggle/input/blood-vessel-segmentation/test/*"
     submit_justify_file_path = "./kaggle/input/blood-vessel-segmentation/test/kidney_5/images/*.tif"
@@ -202,32 +202,9 @@ model.load_state_dict(tc.load(CFG.model_path[0],"cpu"))
 model.eval()
 model.cuda()
 
-def get_prediction_from_axis(img, model, CFG, axis=0):
-    # Rotate the image volume based on the specified axis
-    if axis == 1:
-        img = img.transpose(2, 3).transpose(1, 2)
-    elif axis == 2:
-        img = img.transpose(1, 3).transpose(2, 3)
-
-    # Rest of the prediction code remains the same but adapted for current view
-    # ...
-    # Similar to the code you have above for predicting and averaging the outputs
-    # Remember to rotate the output back to the original orientation for combination
-
-    if axis == 1:
-        mask_pred = mask_pred.transpose(1, 2).transpose(2, 3)
-    elif axis == 2:
-        mask_pred = mask_pred.transpose(2, 3).transpose(1, 3)
-
-    return mask_pred
-
 
 def predict_slice(axis, x, model, cfg,path, use_tta=True):
     # Axis: 0, 1, or 2 corresponding to D, H, W
-
-    # axis_size = x.shape[axis]
-    # loader = np.array_split(np.arange(axis_size), max(1, int(axis_size // cfg.batch_size)))
-
     if axis == 0:
         x = x
     elif axis == 1:
@@ -302,9 +279,6 @@ def get_output(debug=False):
     for path in paths[:100]:
         # X will have shape [D, H, W] after loading and any required preprocessing
         x=load_data(path,"/images/")
-        # dataset=Pipeline_Dataset(x,path,None)
-        # dataloader=DataLoader(dataset,batch_size=1,shuffle=debug,num_workers=2)
-        # Get predictions along all three axes 
         predict_d = predict_slice(0, x, model, CFG, path=path, use_tta=True)
         predict_h = predict_slice(1, x, model, CFG, path=path, use_tta=True)
         predict_w = predict_slice(2, x, model, CFG, path=path, use_tta=True)
@@ -315,7 +289,7 @@ def get_output(debug=False):
         
         # ... (Any post-processing and addition to outputs) ...
         outputs.append(consolidate_pred)
-    # ... (Your remaining code) ...
+
     return outputs
 
 
@@ -332,7 +306,6 @@ def get_output(debug=False):
             if i == 0:
                 predict_d = predict_slice(0, x, model, CFG, path=path, use_tta=True)
                 predict_d = np.array(predict_d)
-                
             elif i == 1:
                 predict_h = predict_slice(1, x, model, CFG, path=path, use_tta=True)
                 predict_h = np.array(predict_h)
@@ -344,27 +317,33 @@ def get_output(debug=False):
     
     return consolidate_pred
 
-import datetime
+
+def get_date_time():
+    import datetime
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    current_time = datetime.datetime.now().strftime("%H-%M-%S")
+    return current_date, current_time
+
+if not CFG.kaggle:
+    current_date, current_time = get_date_time()
  
-# 获取当前日期和时间
-current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-current_time = datetime.datetime.now().strftime("%H-%M-%S")
- 
-print("当前日期为：", current_date)
-print("当前时间为：", current_time)
+    print("当前日期为：", current_date)
+    print("当前时间为：", current_time)
 
 is_submit=len(glob(CFG.submit_justify_file_path))!=3
+debug = not is_submit  # 如果文件夹中的文件数为3，则is_submit = False，启动debug？哦我草我懂了，这是应付kaggle那个机制
 print(len(glob(CFG.submit_justify_file_path)))
+print('submit:',end = '')
 print(is_submit)
 
 
 print('start to get output')
-outputs=get_output(not is_submit) # 如果文件夹中的文件数为3，则is_submit = False，启动debug？哦我草我懂了，这是应付kaggle那个机制
+outputs=get_output(debug) 
 print('get output done')
 
 
 import re
-debug = not is_submit
+
 if debug:
     paths=[CFG.test_data_path]
 else:
@@ -404,16 +383,6 @@ for idx, mask_pred in enumerate(outputs):
     file_name = file_list[idx]  # idx 对应当前mask_pred的索引
     print(file_name) 
     id = "_".join(file_name.split(".")[:-1])  # 移除文件扩展名部分
-
-    # 如果有可视化需求
-    # if not is_submit:
-    #     plt.subplot(121)
-    #     plt.imshow(mask_pred)
-    #     plt.title(f'Original - {id}')
-    #     plt.subplot(122)
-    #     plt.imshow(mask_pred>TH)
-    #     plt.title(f'Thresholded - {id}')
-    #     plt.show()
 
     # 应用阈值并执行RLE编码
     mask_pred_binary = mask_pred > TH
