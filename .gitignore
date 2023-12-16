@@ -7,3 +7,5 @@ data/
 kaggle/input/
 
 models/
+
+.cache/
