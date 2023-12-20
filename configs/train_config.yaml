@@ -5,13 +5,13 @@ in_chans: 5
 target_size: 1
 
 root_path: 'kaggle/input/blood-vessel-segmentation'
-input_size: 256
+input_size: 512
 train_batch_size: 16
 drop: ['kidney_3_dense']
 
 num_workers: 2
-epochs: 10
-lr: 6e-5
+epochs: 50
+lr: 6e-6
 seed: 3407
 device: 'cuda'
 

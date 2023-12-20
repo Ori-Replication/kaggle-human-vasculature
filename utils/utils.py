@@ -23,7 +23,7 @@ class Config:
                     A.MotionBlur()], p=0.4),
             A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
             # A.RandomBrightnessContrast(limit=0.2, p=0.5), 
-            ToTensorV2(transpose_mask=True)]
+            ToTensorV2(transpose_mask=True)] # 三维  处理：超过 99.x的点 归一到 99， 小于 
         
         val_aug_list = [ToTensorV2(transpose_mask=True)]
         

@@ -17,7 +17,7 @@ class CFG:
 # ============== model CFG =============
     model_name = 'Unet'
     #backbone = 'efficientnet-b0'
-    backbone = 'se_resnet50'
+    backbone = 'se_resnet50'# convnext 卷积网络改成swin transformer 
 
     in_chans = 5 # 65
     # ============== training CFG =============
@@ -30,9 +30,9 @@ class CFG:
     target_size = 1
     # ============== fold =============
     valid_id = 1
-    batch=64
+    batch=128
     th_percentile = 0.002#0.005 /public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/input/blood-vessel-segmentation/train/kidney_2
-    model_path=["./kaggle/working/checkpoints/Unet_epoch_9.pt"]
+    model_path=["./kaggle/working/checkpoints/Unet_2023-12-18_00-37-18_epoch_49.pt"]
     test_data_path="./kaggle/input/blood-vessel-segmentation/train/kidney_2"
     submit_test_data_path="./kaggle/input/blood-vessel-segmentation/test/*"
     submit_justify_file_path = "./kaggle/input/blood-vessel-segmentation/test/kidney_5/images/*.tif"
@@ -364,11 +364,9 @@ file_list = []
 print(label_paths)
 for label_path in label_paths:
     kidney_id = re.split(r'[\\/]', label_path)[-2]
-    print(kidney_id)
     file_names = sorted(os.listdir(label_path))
     for file_name in file_names:
         file_name = kidney_id + '_' + file_name
-        print(file_name)
         file_list.append(file_name) 
 
 
@@ -378,10 +376,8 @@ print(file_list)
 
 for idx, mask_pred in enumerate(outputs):
     # 获取id (例如：'kidney_1_test_label.png' -> 'kidney_1_test')
-    print(idx)
     # print(file_list)
     file_name = file_list[idx]  # idx 对应当前mask_pred的索引
-    print(file_name) 
     id = "_".join(file_name.split(".")[:-1])  # 移除文件扩展名部分
 
     # 应用阈值并执行RLE编码

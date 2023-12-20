@@ -36,7 +36,8 @@ def main():
     model = build_model(cfg)
     model = DataParallel(model)
 
-    loss_fn = DiceLoss()
+    loss_fn_1 = DiceLoss() # 和 BCEloss 加权 预训练 模型 医学 CT
+    loss_fn_2 = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr)
     scaler = torch.cuda.amp.GradScaler()
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=cfg.lr,
@@ -46,13 +47,13 @@ def main():
     date, time = get_date_time()
     
     for epoch in range(cfg.epochs):
-        train_one_epoch(model, train_loader, loss_fn, optimizer, scaler, scheduler, epoch, cfg)
-        val(model, val_loader, loss_fn, epoch, cfg)
+        train_one_epoch(model, train_loader, loss_fn_1,loss_fn_2,  optimizer, scaler, scheduler, epoch, cfg)
+        val(model, val_loader, loss_fn_1,loss_fn_2, epoch, cfg)
         torch.save(model.state_dict(), os.path.join(cfg.output_path, f'{cfg.model_name}_{date}_{time}_epoch_{epoch}.pt'))
 
 
 
-def train_one_epoch(model, train_loader, loss_fn, optimizer, scaler, scheduler, epoch, cfg):
+def train_one_epoch(model, train_loader, loss_fn_1,loss_fn_2, optimizer, scaler, scheduler, epoch, cfg):
     model.train()
     iters = tqdm(range(len(train_loader)))
     train_loss = 0
@@ -65,7 +66,7 @@ def train_one_epoch(model, train_loader, loss_fn, optimizer, scaler, scheduler, 
 
         with torch.cuda.amp.autocast():
             outputs = model(images)
-            loss = loss_fn(outputs, masks)
+            loss = 0.3 * loss_fn_1(outputs, masks) + 0.7 * loss_fn_2(outputs, masks)
 
         optimizer.zero_grad()
         scaler.scale(loss).backward()
@@ -80,7 +81,7 @@ def train_one_epoch(model, train_loader, loss_fn, optimizer, scaler, scheduler, 
     iters.close()
 
 
-def val(model, val_loader, loss_fn, epoch, cfg):
+def val(model, val_loader, loss_fn_1,loss_fn_2, epoch, cfg):
     model.eval()
     iters = tqdm(range(len(val_loader)))
     val_loss = 0
@@ -94,7 +95,7 @@ def val(model, val_loader, loss_fn, epoch, cfg):
         with torch.cuda.amp.autocast():
             with torch.no_grad():
                 outputs = model(images)
-                loss = loss_fn(outputs, masks)
+                loss = 0.3 * loss_fn_1(outputs, masks) + 0.7 * loss_fn_2(outputs, masks)
 
         val_loss = (val_loss*i + loss.item())/(i+1)
         val_dice_score = (val_dice_score*i + surface_dice(outputs, masks))/(i+1)
