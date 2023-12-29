@@ -243,6 +243,7 @@ def compute_surface_distances(mask_gt,
       cropmask_pred.astype(np.uint8), kernel, mode="constant", cval=0)
 
   # create masks with the surface voxels
+  """我懂了！检测边缘点的方法，即为其上下左右都没有任何点，则被判定为边缘点"""
   borders_gt = ((neighbour_code_map_gt != 0) &
                 (neighbour_code_map_gt != full_true_neighbours))
   borders_pred = ((neighbour_code_map_pred != 0) &
@@ -261,11 +262,10 @@ def compute_surface_distances(mask_gt,
         ~borders_pred, sampling=spacing_mm)
   else:
     distmap_pred = np.Inf * np.ones(borders_pred.shape)
-
+  """从无穷开始"""
   # compute the area of each surface element
   surface_area_map_gt = neighbour_code_to_surface_area[neighbour_code_map_gt]
-  surface_area_map_pred = neighbour_code_to_surface_area[
-      neighbour_code_map_pred]
+  surface_area_map_pred = neighbour_code_to_surface_area[neighbour_code_map_pred]
 
   # create a list of all surface elements with distance and area
   distances_gt_to_pred = distmap_pred[borders_gt]

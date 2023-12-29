@@ -5,7 +5,7 @@ import torch.nn as nn
 from tqdm import tqdm
 import os
 
-from utils.utils import Config, min_max_normalization, setup_seeds, get_date_time, SurfaceLoss,BCEWithLogitsLossManual
+from utils.utils import Config, min_max_normalization, setup_seeds, get_date_time
 from utils.dataset import KaggleDataset
 from models.unet import build_model
 from optimizer.loss import surface_dice
@@ -38,7 +38,6 @@ def main():
 
     loss_fn_1 = DiceLoss() # 和 BCEloss 加权 预训练 模型 医学 CT
     loss_fn_2 = nn.BCEWithLogitsLoss()
-    loss_fn_3 = SurfaceLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr)
     scaler = torch.cuda.amp.GradScaler()
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=cfg.lr,
@@ -48,13 +47,9 @@ def main():
     date, time = get_date_time()
     
     for epoch in range(cfg.epochs):
-        train_one_epoch(model, train_loader, loss_fn_1,loss_fn_3,  optimizer, scaler, scheduler, epoch, cfg)
-        val(model, val_loader, loss_fn_1,loss_fn_3, epoch, cfg)
-        model_dir = os.path.join(cfg.output_path, f'{cfg.model_name}_{date}_{time}_Dice_With_Surface)')
-        if not os.path.exists(model_dir):
-            os.makedirs(model_dir)
-        model_save_path = os.path.join(model_dir, f'epoch_{epoch}.pt')
-        torch.save(model.state_dict(), model_save_path)
+        train_one_epoch(model, train_loader, loss_fn_1,loss_fn_2,  optimizer, scaler, scheduler, epoch, cfg)
+        val(model, val_loader, loss_fn_1,loss_fn_2, epoch, cfg)
+        torch.save(model.state_dict(), os.path.join(cfg.output_path, f'{cfg.model_name}_{date}_{time}_Pure_Dice/epoch_{epoch}.pt'))
 
 
 
@@ -71,7 +66,7 @@ def train_one_epoch(model, train_loader, loss_fn_1 ,loss_fn_2, optimizer, scaler
 
         with torch.cuda.amp.autocast():
             outputs = model(images)
-            loss = 0.8 * loss_fn_1(outputs, masks) + 0.2 *loss_fn_2(outputs, masks)
+            loss = loss_fn_2(outputs, masks)
 
         optimizer.zero_grad()
         scaler.scale(loss).backward()
@@ -100,7 +95,8 @@ def val(model, val_loader, loss_fn_1,loss_fn_2, epoch, cfg):
         with torch.cuda.amp.autocast():
             with torch.no_grad():
                 outputs = model(images)
-                loss = 0.8 * loss_fn_1(outputs, masks) + 0.2 *loss_fn_2(outputs, masks)
+                loss = loss_fn_2(outputs, masks)
+
         val_loss = (val_loss*i + loss.item())/(i+1)
         val_dice_score = (val_dice_score*i + surface_dice(outputs, masks))/(i+1)
         iters.set_description(f"Epoch {epoch+1}/{cfg.epochs}, val loss: {val_loss:.4f}, val dice score: {val_dice_score:.4f}")

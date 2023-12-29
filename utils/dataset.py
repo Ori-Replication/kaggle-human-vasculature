@@ -48,15 +48,22 @@ class KaggleDataset(Dataset):
                     image_chunk = load_data(path, "/images/")
                     label_chunk = load_data(path, "/labels/")
                     # augmentation
+                    # image_chunks.append(rotate_and_find_max_cuboid(image_chunk,0,30))
+                    # image_chunks.append(rotate_and_find_max_cuboid(image_chunk,1,30))
+                    # image_chunks.append(rotate_and_find_max_cuboid(image_chunk,2,30))
                     image_chunks.append(image_chunk)
                     image_chunks.append(image_chunk.permute(1, 2, 0))
                     image_chunks.append(image_chunk.permute(2, 0, 1))
+                    # label_chunks.append(rotate_and_find_max_cuboid(label_chunks,0,30))
+                    # label_chunks.append(rotate_and_find_max_cuboid(label_chunks,1,30))
+                    # label_chunks.append(rotate_and_find_max_cuboid(label_chunks,2,30))
                     label_chunks.append(label_chunk)
                     label_chunks.append(label_chunk.permute(1, 2, 0))
                     label_chunks.append(label_chunk.permute(2, 0, 1))
+
         elif mode == 'val':
             self.transform = cfg.val_aug
-            dir = dirs[0]
+            dir = cfg.drop[1]
             path = os.path.join(cfg.root_path, 'train', dir)
             print('loading validate ' + path)
             image_chunk = load_data(path, "/images/")
@@ -106,3 +113,55 @@ class KaggleDataset(Dataset):
                     if i >= 1:
                         y_slice = y_slice.flip(dims=(i-1,))
         return x_slice, y_slice
+    
+from scipy.ndimage import affine_transform
+
+def create_rotation_matrix(axis, angle):
+    # 将角度从度转换为弧度
+    theta = np.radians(angle)
+    cos, sin = np.cos(theta), np.sin(theta)
+
+    if axis == 0:  # 绕x轴旋转
+        return np.array([[1, 0,      0],
+                         [0, cos, -sin],
+                         [0, sin,  cos]])
+    elif axis == 1:  # 绕y轴旋转
+        return np.array([[cos, 0, sin],
+                         [0,   1,   0],
+                         [-sin, 0, cos]])
+    elif axis == 2:  # 绕z轴旋转
+        return np.array([[cos, -sin, 0],
+                         [sin,  cos, 0],
+                         [0,     0,  1]])
+    else:
+        raise ValueError("Axis should be 0, 1, or 2.")
+
+def apply_affine_transform(matrix, axis, angle):
+    rot_matrix = create_rotation_matrix(axis, angle)
+    # 获取输入矩阵的中心点，用于设置旋转中心
+    center = np.array(matrix.shape) // 2
+    # 计算仿射变换后的矩阵
+    rotated_matrix = affine_transform(matrix, rot_matrix, offset=center-center.dot(rot_matrix))
+    return rotated_matrix
+
+def find_max_inscribed_cuboid(matrix):
+    # 获取矩阵的三个维度
+    depth, height, width = matrix.shape
+    
+    # 计算每个维度上需要裁减的层数
+    d_cut = int(np.ceil(depth * 0.1))
+    h_cut = int(np.ceil(height * 0.1))
+    w_cut = int(np.ceil(width * 0.1))
+    
+    # 裁剪矩阵
+    inscribed_cuboid = matrix[d_cut:depth - d_cut, h_cut:height - h_cut, w_cut:width - w_cut]
+    
+    return inscribed_cuboid
+
+    
+
+def rotate_and_find_max_cuboid(matrix, axis, angle):
+    matrix = matrix.numpy()
+    rotated_matrix = apply_affine_transform(matrix, axis, angle)
+    max_cuboid = find_max_inscribed_cuboid(rotated_matrix)
+    return torch.tensor(max_cuboid)

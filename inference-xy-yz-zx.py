@@ -1,3 +1,6 @@
+"""
+/public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/working/checkpoints/Unet_wzx_pureBCE/Unet_without_kidney2.pt
+"""
 import torch as tc 
 import torch.nn as nn  
 import numpy as np
@@ -29,10 +32,10 @@ class CFG:
     
     target_size = 1
     # ============== fold =============
-    valid_id = 1
-    batch=128
+    valid_id = 1#/public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/working/checkpoints/Unet_2023-12-29_00-22-40_BCE_with_dice)/epoch_19.pt
+    batch=128 #/public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/working/checkpoints/Unet_2023-12-28_23-30-31_Pure_Dice/epoch_49.pt
     th_percentile = 0.002#0.005 /public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/input/blood-vessel-segmentation/train/kidney_2
-    model_path=["./kaggle/working/checkpoints/Unet_2023-12-18_00-37-18_epoch_49.pt"]
+    model_path=["./kaggle/working/checkpoints/Unet_wzx_pureBCE/Unet_without_kidney2.pt"]
     test_data_path="./kaggle/input/blood-vessel-segmentation/train/kidney_2"
     submit_test_data_path="./kaggle/input/blood-vessel-segmentation/test/*"
     submit_justify_file_path = "./kaggle/input/blood-vessel-segmentation/test/kidney_5/images/*.tif"
@@ -351,7 +354,7 @@ else:
 TH = [output.flatten() for output in outputs] 
 TH = np.concatenate(TH)
 index = -int(len(TH) * CFG.th_percentile)
-TH:int = np.partition(TH, index)[index]
+TH = np.partition(TH, index)[index]
 print(TH)
 submission_df = pd.DataFrame(columns=['id', 'rle'])
 
@@ -381,7 +384,7 @@ for idx, mask_pred in enumerate(outputs):
     id = "_".join(file_name.split(".")[:-1])  # 移除文件扩展名部分
 
     # 应用阈值并执行RLE编码
-    mask_pred_binary = mask_pred > TH
+    mask_pred_binary = mask_pred >= TH
     rle = rle_encode(mask_pred_binary)
     
     # 将结果追加至submission_df
@@ -393,6 +396,6 @@ for idx, mask_pred in enumerate(outputs):
 
 
 if not CFG.kaggle:
-    submission_df.to_csv('./data/predictions/prediction' + current_date +'-'+ current_time+ '.csv', index=False)
+    submission_df.to_csv('./data/predictions/prediction-dice-bce' + current_date +'-'+ current_time+ '.csv', index=False)
 if CFG.kaggle:
     submission_df.to_csv('submission.csv', index=False)
