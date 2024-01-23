@@ -7,31 +7,62 @@ from glob import glob
 import os
 import numpy as np
 
+
+def min_max_normalization(x:torch.Tensor)->torch.Tensor:
+    """input.shape=(batch,f1,...)"""
+    shape=x.shape
+    if x.ndim>2:
+        x=x.reshape(x.shape[0],-1)
+    
+    min_=x.min(dim=-1,keepdim=True)[0]
+    max_=x.max(dim=-1,keepdim=True)[0]
+    if min_.mean()==0 and max_.mean()==1:
+        return x.reshape(shape)
+    
+    x=(x-min_)/(max_-min_+1e-9)
+    return x.reshape(shape)
 class LoadData(Dataset):
-    def __init__(self,path,s = "/images/"):
+    def __init__(self,path,is_label,s = "/images/"):
         self.paths = glob(path+f"{s}*.tif")
         self.paths.sort()
         self.bool = (s == "/labels/")
+        self.is_label = is_label
+        
     
     def __len__(self):
         return len(self.paths)
     
     def __getitem__(self,index):
-        img = cv2.imread(self.paths[index],cv2.IMREAD_GRAYSCALE)
-        img = torch.from_numpy(img)
-        if self.bool:
-            img = img.to(torch.bool)
+        img=cv2.imread(self.paths[index],cv2.IMREAD_GRAYSCALE)
+        img=torch.from_numpy(img)
+        if self.is_label:
+            img=(img!=0).to(torch.uint8)*255
         else:
-            img = img.to(torch.uint8)
+            img=img.to(torch.uint8)
         return img
     
-def load_data(path,s):
-    loaded_datas = LoadData(path,s) 
+def load_data(path,s,is_label=False):
+    loaded_datas = LoadData(path,is_label,s) 
     data_loader = DataLoader(loaded_datas, batch_size=16, num_workers=0)
     data=[]
     for x in tqdm(data_loader):
         data.append(x)
-    return torch.cat(data,dim=0)
+    x = torch.cat(data,dim=0)
+    del data
+    if not is_label:
+        ########################################################################
+        TH=x.reshape(-1).numpy()
+        index = -int(len(TH) * 1e-3)  # TODO 这是一个可调超参数
+        TH:int = np.partition(TH, index)[index]
+        x[x>TH]=int(TH)
+        ########################################################################
+        TH=x.reshape(-1).numpy()
+        index = -int(len(TH) * 1e-3)
+        TH:int = np.partition(TH, -index)[-index]
+        x[x<TH]=int(TH)
+        ########################################################################
+        x=(min_max_normalization(x.to(torch.float16)[None])[0]*255).to(torch.uint8)
+    return x
 
 class KaggleDataset(Dataset):
     def __init__(self, cfg, mode='train'):
@@ -45,8 +76,8 @@ class KaggleDataset(Dataset):
                 if dir not in cfg.drop:
                     path = os.path.join(cfg.root_path, 'train', dir)
                     print('loading ' + path)
-                    image_chunk = load_data(path, "/images/")
-                    label_chunk = load_data(path, "/labels/")
+                    image_chunk = load_data(path, "/images/",is_label = False)
+                    label_chunk = load_data(path, "/labels/",is_label = True)
                     # augmentation
                     # image_chunks.append(rotate_and_find_max_cuboid(image_chunk,0,30))
                     # image_chunks.append(rotate_and_find_max_cuboid(image_chunk,1,30))
@@ -63,11 +94,11 @@ class KaggleDataset(Dataset):
 
         elif mode == 'val':
             self.transform = cfg.val_aug
-            dir = cfg.drop[1]
+            dir = cfg.valid[0]
             path = os.path.join(cfg.root_path, 'train', dir)
             print('loading validate ' + path)
-            image_chunk = load_data(path, "/images/")
-            label_chunk = load_data(path, "/labels/")
+            image_chunk = load_data(path, "/images/",is_label = False)
+            label_chunk = load_data(path, "/labels/",is_label = True)
             image_chunks.append(image_chunk)
             label_chunks.append(label_chunk)
 
@@ -93,16 +124,16 @@ class KaggleDataset(Dataset):
                 break
         x = self.image_chunks[i]
         y = self.label_chunks[i]
-        
-        x_index = np.random.randint(0,x.shape[1]-self.input_size)
-        y_index = np.random.randint(0,x.shape[2]-self.input_size)
 
-        x_slice = x[index:(index + self.in_chans), x_index:(x_index + self.input_size), y_index:(y_index + self.input_size)].to(torch.float32)
-        y_slice = y[index + self.in_chans // 2, x_index:(x_index + self.input_size), y_index:(y_index + self.input_size)].to(torch.float32)
+        x_index = (x.shape[1]-self.input_size)//2#np.random.randint(0,x.shape[1]-self.input_size)
+        y_index = (x.shape[2]-self.input_size)//2#np.random.randint(0,x.shape[2]-self.input_size)
+
+        x_slice = x[index:(index + self.in_chans), x_index:(x_index + self.input_size), y_index:(y_index + self.input_size)]
+        y_slice = y[index + self.in_chans // 2, x_index:(x_index + self.input_size), y_index:(y_index + self.input_size)]
 
         pair = self.transform(image = x_slice.numpy().transpose(1,2,0), mask = y_slice.numpy())
         x_slice = pair['image']
-        y_slice = pair['mask']
+        y_slice = pair['mask']>=127
         if self.mode == 'train':
             i = np.random.randint(4)
             x_slice = x_slice.rot90(i,dims=(1,2))
@@ -113,7 +144,7 @@ class KaggleDataset(Dataset):
                     if i >= 1:
                         y_slice = y_slice.flip(dims=(i-1,))
         return x_slice, y_slice
-    
+
 from scipy.ndimage import affine_transform
 
 def create_rotation_matrix(axis, angle):

@@ -13,6 +13,7 @@ from torch import einsum
 from torch import Tensor
 from scipy.ndimage import distance_transform_edt as distance
 from typing import Any, Callable, Iterable, List, Set, Tuple, TypeVar, Union
+import cv2
 
 class Config:
     def __init__(self, cfg_path):
@@ -20,16 +21,18 @@ class Config:
         for k, v in cfg.items():
             setattr(self, k, v)
         
+        p_augm = 0.05
         train_aug_list = [
-            A.RandomResizedCrop(cfg.input_size, cfg.input_size, scale=(0.8,1.25)),
-            A.ShiftScaleRotate(p=0.75),
-            A.OneOf([A.GaussNoise(var_limit=[10, 50]),
-                    A.GaussianBlur(),
-                    A.MotionBlur()], p=0.4),
-            A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
-            # A.RandomBrightnessContrast(limit=0.2, p=0.5), 
-            ToTensorV2(transpose_mask=True)] # 三维  处理：超过 99.x的点 归一到 99， 小于 
-        
+            A.Rotate(limit=270, p= 0.02),
+            A.RandomScale(scale_limit=(0.8,1.25),interpolation=cv2.INTER_CUBIC,p=p_augm),
+            A.RandomCrop(cfg.input_size, cfg.input_size,p=1),
+            A.RandomGamma(p=p_augm*2/3),
+            A.RandomBrightnessContrast(p=p_augm,),
+            A.GaussianBlur(p=p_augm),
+            A.MotionBlur(p=p_augm),
+            A.GridDistortion(num_steps=5, distort_limit=0.3, p=p_augm),
+            ToTensorV2(transpose_mask=True),
+        ]
         val_aug_list = [ToTensorV2(transpose_mask=True)]
         
         self.train_aug = A.Compose(train_aug_list)
@@ -57,10 +60,63 @@ def min_max_normalization(x:torch.Tensor)->torch.Tensor:
     x = (x-min_) / (max_-min_+1e-9)
     return x.reshape(shape)
 
+def norm_with_clip(x:torch.Tensor,smooth=1e-5):
+    dim=list(range(1,x.ndim))
+    mean=x.mean(dim=dim,keepdim=True)
+    std=x.std(dim=dim,keepdim=True)
+    x=(x-mean)/(std+smooth)
+    x[x>5]=(x[x>5]-5)*1e-3 +5
+    x[x<-3]=(x[x<-3]+3)*1e-3-3
+    return x
+
+def add_noise(x:torch.Tensor,max_randn_rate=0.1,randn_rate=None,x_already_normed=False):
+    """input.shape=(batch,f1,f2,...) output's var will be normalizate  """
+    ndim=x.ndim-1
+    if x_already_normed:
+        x_std=torch.ones([x.shape[0]]+[1]*ndim,device=x.device,dtype=x.dtype)
+        x_mean=torch.zeros([x.shape[0]]+[1]*ndim,device=x.device,dtype=x.dtype)
+    else: 
+        dim=list(range(1,x.ndim))
+        x_std=x.std(dim=dim,keepdim=True)
+        x_mean=x.mean(dim=dim,keepdim=True)
+    if randn_rate is None:
+        randn_rate=max_randn_rate*np.random.rand()*torch.rand(x_mean.shape,device=x.device,dtype=x.dtype)
+    cache=(x_std**2+(x_std*randn_rate)**2)**0.5
+    #https://blog.csdn.net/chaosir1991/article/details/106960408
+    
+    return (x-x_mean+torch.randn(size=x.shape,device=x.device,dtype=x.dtype)*randn_rate*x_std)/(cache+1e-7)
+
+def dice_coef(y_pred:torch.Tensor,y_true:torch.Tensor, thr=0.5, dim=(-1,-2), epsilon=0.001):
+    y_pred=y_pred.sigmoid()
+    y_true = y_true.to(torch.float32)
+    y_pred = (y_pred>thr).to(torch.float32)
+    inter = (y_true*y_pred).sum(dim=dim)
+    den = y_true.sum(dim=dim) + y_pred.sum(dim=dim)
+    dice = ((2*inter+epsilon)/(den+epsilon)).mean()
+    return dice
+
+class DiceLoss(nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(DiceLoss, self).__init__()
+
+    def forward(self, inputs, targets, smooth=1):
+        
+        #comment out if your model contains a sigmoid or equivalent activation layer
+        inputs = inputs.sigmoid()   
+        
+        #flatten label and prediction tensors
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+        
+        intersection = (inputs * targets).sum()                            
+        dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
+        
+        return 1 - dice
+
 def three_dimension_dice_score(pred:np.ndarray, target:np.ndarray):
     """计算三维Dice分数"""
     intersection = np.sum(pred*target)
-    union = np.sum(pred + target)
+    union = np.sum(pred)+ np.sum(target)
     return (2*intersection/union).item() * 100
 
 def rle_encode(img):
@@ -253,3 +309,14 @@ class BCEWithLogitsLossManual(nn.Module):
         else: # 'none'
             return bce_loss
 
+def read_kidney_2_label():
+    rle_path = './kaggle/input/blood-vessel-segmentation/train_rles.csv'
+    df = pd.read_csv(rle_path)
+    df = df[df['id'].str.contains('kidney_2')]
+    decoded_images = []
+    for index, row in df.iterrows():
+        mask = rle_decode(row['rle'], shape=(1041, 1511))
+        decoded_images.append(mask)
+    volume_data = np.stack(decoded_images, axis=0)
+    return volume_data
+    

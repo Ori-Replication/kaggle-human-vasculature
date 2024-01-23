@@ -1,0 +1,19 @@
+model_name: 'Unet'
+backbone: 'se_resnet50'
+weight: 'imagenet'
+in_chans: 3
+target_size: 1
+
+root_path: 'kaggle/input/blood-vessel-segmentation'
+input_size: 224
+train_batch_size: 64
+drop: ['kidney_2','kidney_3_dense']
+valid: ['kidney_2']
+
+num_workers: 2
+epochs: 25
+lr: 1e-4
+seed: 3407
+device: 'cuda'
+
+output_path: 'kaggle/working/checkpoints'

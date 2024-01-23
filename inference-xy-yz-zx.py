@@ -30,11 +30,11 @@ class CFG:
     stride = tile_size // 2
     drop_egde_pixel=0
     
-    target_size = 1
-    # ============== fold =============
+    target_size = 1#/public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/working/checkpoints/Unet_wzx_pureBCE/Unet_without_kidney2.pt
+    # ============== fold =============#/public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/working/checkpoints/Unet_2023-12-30_17-49-23_Dice_With_Surface)/epoch_15.pt
     valid_id = 1#/public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/working/checkpoints/Unet_2023-12-29_00-22-40_BCE_with_dice)/epoch_19.pt
     batch=128 #/public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/working/checkpoints/Unet_2023-12-28_23-30-31_Pure_Dice/epoch_49.pt
-    th_percentile = 0.002#0.005 /public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/input/blood-vessel-segmentation/train/kidney_2
+    th_percentile = 0.004#0.005 /public/sist/home/hongmt2022/MyWorks/kaggle-bv/kaggle/input/blood-vessel-segmentation/train/kidney_2
     model_path=["./kaggle/working/checkpoints/Unet_wzx_pureBCE/Unet_without_kidney2.pt"]
     test_data_path="./kaggle/input/blood-vessel-segmentation/train/kidney_2"
     submit_test_data_path="./kaggle/input/blood-vessel-segmentation/test/*"
@@ -396,6 +396,42 @@ for idx, mask_pred in enumerate(outputs):
 
 
 if not CFG.kaggle:
+    output_path = './data/predictions/prediction-dice-bce' + current_date +'-'+ current_time+ '.csv'
     submission_df.to_csv('./data/predictions/prediction-dice-bce' + current_date +'-'+ current_time+ '.csv', index=False)
 if CFG.kaggle:
     submission_df.to_csv('submission.csv', index=False)
+    
+from utils.dataset import load_data
+from utils.utils import read_rle_from_path, read_images, three_dimension_dice_score, read_kidney_2_label
+import surface_distance
+import numpy as np
+
+def calculate_1_ratio(matrix):
+    total_elements = matrix.size
+    ones_count = np.count_nonzero(matrix != 0)
+    ratio = ones_count / total_elements
+    return ratio
+
+def compute_3d_surface_dice_loss(label_path, pred_path,spacing_mm ):
+    label = read_kidney_2_label()
+    label = label.astype(bool)
+    print('label load done')
+    pred = read_rle_from_path(pred_path, label.shape[1], label.shape[2])
+    pred = pred.astype(bool)
+    one_ratio = calculate_1_ratio(pred)
+    print('one_ratio',end = '')
+    print(one_ratio)
+    print('pred load done')
+    three_d_dice_score = three_dimension_dice_score(pred, label)
+    print('three_dimension_dice_score:',end = '')
+    print(three_d_dice_score)
+    surface_distances = surface_distance.compute_surface_distances(label, pred, spacing_mm)
+    print('surface_distance compute done')
+    score = surface_distance.compute_surface_dice_at_tolerance(surface_distances, tolerance_mm=0)
+    return three_d_dice_score, score
+
+pred_path = output_path
+label_path = 'kaggle/input/blood-vessel-segmentation/train/kidney_2/labels/'
+spacing_mm = [1, 1, 1]
+three_d_dice_score, score = compute_3d_surface_dice_loss(label_path, pred_path, spacing_mm)
+print('3d_surface_dice_score:', score)

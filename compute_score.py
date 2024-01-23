@@ -1,5 +1,5 @@
 from utils.dataset import load_data
-from utils.utils import read_rle_from_path, read_images, three_dimension_dice_score
+from utils.utils import read_rle_from_path, read_images, three_dimension_dice_score, read_kidney_2_label
 import surface_distance
 import numpy as np
 
@@ -10,7 +10,7 @@ def calculate_1_ratio(matrix):
     return ratio
 
 def compute_3d_surface_dice_loss(label_path, pred_path,spacing_mm ):
-    label = read_images(label_path)
+    label = read_kidney_2_label()
     label = label.astype(bool)
     print('label load done')
     pred = read_rle_from_path(pred_path, label.shape[1], label.shape[2])
@@ -29,7 +29,7 @@ def compute_3d_surface_dice_loss(label_path, pred_path,spacing_mm ):
 
 
 if __name__ == "__main__":
-    pred_path = 'data/predictions/prediction-pure-bce2023-12-29-12-32-27.csv'
+    pred_path = 'data/predictions/prediction-dice-bce2023-12-31-14-37-31-cc3d.csv'
     label_path = 'kaggle/input/blood-vessel-segmentation/train/kidney_2/labels/'
     spacing_mm = [1, 1, 1]
     three_d_dice_score, score = compute_3d_surface_dice_loss(label_path, pred_path, spacing_mm)
