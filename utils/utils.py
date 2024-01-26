@@ -252,7 +252,7 @@ def sset(a: Tensor, sub: Iterable) -> bool:
     return uniq(a).issubset(sub)
  
  
-class SurfaceLoss():
+class SurfaceLoss():# TODO:把surfaceLoss用起来，可能在训练过程中前期权重较低，后期提高
     def __init__(self):
         # Self.idc is used to filter out some classes of the target mask. Use fancy indexing
         self.idc: List[int] = [1]  # 这里忽略背景类  https://github.com/LIVIAETS/surface-loss/issues/3

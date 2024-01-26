@@ -51,7 +51,7 @@ def main():
     for epoch in range(cfg.epochs):
         train_one_epoch(model, train_loader, loss_fn,loss_fn,  optimizer, scaler, scheduler, epoch, cfg)
         val(model, val_loader, loss_fn,loss_fn, epoch, cfg)
-        model_dir = os.path.join(cfg.output_path, f'{cfg.model_name}_{date}_{time}_Swin_1chan')
+        model_dir = os.path.join(cfg.output_path, f'{cfg.model_name}_{date}_{time}_Swin')
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
         model_save_path = os.path.join(model_dir, f'epoch_{epoch}.pt')
@@ -69,8 +69,8 @@ def train_one_epoch(model, train_loader, loss_fn_1 ,loss_fn_2, optimizer, scaler
         masks = masks.cuda().to(torch.float32)
         images = norm_with_clip(images.reshape(-1,*images.shape[2:])).reshape(images.shape)
         images = add_noise(images,max_randn_rate=0.5,x_already_normed=True)
-        images_mid = images[:,cfg.in_chans//2,:,:]
-        images = images_mid.unsqueeze(1).expand(images.shape)
+        # images_mid = images[:,cfg.in_chans//2,:,:]
+        # images = images_mid.unsqueeze(1).expand(images.shape)
 
         with torch.cuda.amp.autocast():
             outputs = model(images)
