@@ -87,6 +87,11 @@ or
 kaggle/working/checkpoints/{cfg.model_name}_{date}_{time}_Swin
 ```
 You can copy the latest checkpoint to do the infer.
+you can download an example checkpoint from
+(you may need to connect to shanghaitech VPN if you are not in school)
+```
+传输链接: (内网) https://send.deemos.com/download/aa1be2b09705cbed/#3lct-HUDdfFx-tNRBzA2iw 或打开 send.deemos.com 使用传输口令: puvJ1D 提取.
+```
 For the Unet model, you should frist modify the path in 
 ```
 inference-xy-yz-zx.py
@@ -115,6 +120,11 @@ You can copy the path, and visulize it in the
 visulize.py
 ```
 (It requires vtk package)
+you can download an example predction csv file from
+(you may need to connect to shanghaitech VPN if you are not in school)
+```
+传输链接: (内网) https://send.deemos.com/download/1d1b3c86ed429752/#C1sjNNbyLa9S0dNwr-7R4A 或打开 send.deemos.com 使用传输口令: QC4eaA 提取.
+```
 Example:
 ```python
 if __name__ == "__main__":
