@@ -1,0 +1,15 @@
+torch==2.0.0
+torchaudio
+torchvision
+numpy
+matplotlib
+pandas
+tqdm
+opencv-python
+pillow
+vtk
+segmentation_models_pytorch
+albumentations
+omegaconf
+python-dotenv
+transformers

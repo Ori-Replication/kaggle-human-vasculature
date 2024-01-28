@@ -87,11 +87,7 @@ or
 kaggle/working/checkpoints/{cfg.model_name}_{date}_{time}_Swin
 ```
 You can copy the latest checkpoint to do the infer.
-you can download an example checkpoint from
-(you may need to connect to shanghaitech VPN if you are not in school)
-```
-传输链接: (内网) https://send.deemos.com/download/aa1be2b09705cbed/#3lct-HUDdfFx-tNRBzA2iw 或打开 send.deemos.com 使用传输口令: puvJ1D 提取.
-```
+
 For the Unet model, you should frist modify the path in 
 ```
 inference-xy-yz-zx.py
@@ -108,6 +104,27 @@ class CFG:
 ```
 You only need to modify the model_path.
 
+For the Swin model
+you can download an example checkpoint from
+(you may need to connect to shanghaitech VPN if you are not in school)
+```
+传输链接: (内网) https://send.deemos.com/download/aa1be2b09705cbed/#3lct-HUDdfFx-tNRBzA2iw 或打开 send.deemos.com 使用传输口令: puvJ1D 提取.
+```
+
+you should frist modify the path in 
+```
+inference-swin.py
+```
+Example
+```python
+class CFG:
+	...
+    model_path=["/public/sist/home/hongmt2022/MyWorks/kaggle-bv/models/Swin_No_Voi/epoch_19.pt"]
+    test_data_path="./kaggle/input/blood-vessel-segmentation/train/kidney_2"
+
+
+    kaggle = False
+```
 ### Run the score compute
 The inference will generate a csv file under
 ```
