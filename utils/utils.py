@@ -270,7 +270,7 @@ class SurfaceLoss(): # TODO:把surfaceLoss用起来，可能在训练过程中�
         multiplied = einsum("bcwh,bcwh->bcwh", pc, dc)
         loss = multiplied.mean() 
         return loss
- 
+
 class BCEWithLogitsLossManual(nn.Module):
     def __init__(self, weight=None, reduction='mean'):
         """

@@ -4,7 +4,7 @@ weight: 'imagenet'
 in_chans: 1
 target_size: 1
 
-root_path: './kaggle/input/blood-vessel-segmentation-dataset/'
+root_path: '../kaggle-bv/kaggle/input/blood-vessel-segmentation/'
 input_size: 512
 train_batch_size: 16
 chopping_percentile: 0.001
