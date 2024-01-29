@@ -5,7 +5,7 @@ kaggle/working/
 blood-vessel-segmentation/
 data/
 kaggle/input/
-
+*.pyc
 models/
 
 .cache/
