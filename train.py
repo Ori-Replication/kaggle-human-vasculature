@@ -10,7 +10,7 @@ from utils.utils import Config, min_max_normalization, setup_seeds,\
                         get_date_time, SurfaceLoss, BCEWithLogitsLossManual,\
                         DiceLoss, norm_with_clip, add_noise
 from utils.dataset import KaggleDataset
-from models.unet import build_model
+from models.unet import build_model # we use unet for the model now
 from optimizer.loss import surface_dice
 
 def main():
@@ -21,7 +21,7 @@ def main():
     val_dataset = KaggleDataset(cfg, mode='val')
     val_loader = DataLoader(val_dataset, batch_size=16, num_workers=cfg.num_workers)
     
-    model = build_model(cfg)
+    model = build_model(cfg) # unet
     model = DataParallel(model)
 
     loss_fn_1 = DiceLoss() 

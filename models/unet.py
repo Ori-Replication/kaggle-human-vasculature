@@ -1,7 +1,7 @@
 from torch import nn
 import segmentation_models_pytorch as smp
 
-class Net(nn.Module):
+class UNet(nn.Module):
     def __init__(self, cfg, weight=None):
         super().__init__()
         self.cfg = cfg
@@ -25,6 +25,6 @@ def build_model(cfg):
     print('model_name', cfg.model_name)
     print('backbone', cfg.backbone)
 
-    model = Net(cfg, cfg.weight)
+    model = UNet(cfg, cfg.weight)
 
     return model.to(cfg.device)

@@ -365,7 +365,7 @@ print(val_y.shape)
 # Train
 tc.backends.cudnn.enabled = True
 tc.backends.cudnn.benchmark = True
-
+print("Prepare Data")
 train_dataset = NewKaggleDataset(train_x, train_y, arg=True)
 train_dataset = DataLoader(train_dataset, batch_size=CFG.train_batch_size,
                            num_workers=2, shuffle=True, pin_memory=True)
