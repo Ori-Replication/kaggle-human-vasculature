@@ -17,7 +17,7 @@ class FPN(nn.Module):
         # output = output.squeeze(-1)
         return output[:, 0]  # .sigmoid()
     
-def build_model(cfg):
+def fpn_build_model(cfg):
     from dotenv import load_dotenv
     load_dotenv()
 

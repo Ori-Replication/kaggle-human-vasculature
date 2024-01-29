@@ -254,13 +254,13 @@ def sset(a: Tensor, sub: Iterable) -> bool:
     return uniq(a).issubset(sub)
  
  
-class SurfaceLoss():# TODO:把surfaceLoss用起来，可能在训练过程中前期权重较低，后期提高
+class SurfaceLoss(): # TODO:把surfaceLoss用起来，可能在训练过程中前期权重较低，后期提高
     def __init__(self):
         # Self.idc is used to filter out some classes of the target mask. Use fancy indexing
         self.idc: List[int] = [1]  # 这里忽略背景类  https://github.com/LIVIAETS/surface-loss/issues/3
  
     # probs: bcwh, dist_maps: bcwh
-    def __call__(self, probs: Tensor, dist_maps: Tensor) -> Tensor:
+    def forward(self, probs: Tensor, dist_maps: Tensor) -> Tensor:
         assert simplex(probs)
         assert not one_hot(dist_maps)
  
@@ -268,9 +268,7 @@ class SurfaceLoss():# TODO:把surfaceLoss用起来，可能在训练过程中前
         dc = dist_maps[:, self.idc, ...].type(torch.float32)
  
         multiplied = einsum("bcwh,bcwh->bcwh", pc, dc)
- 
-        loss = multiplied.mean()
- 
+        loss = multiplied.mean() 
         return loss
  
 class BCEWithLogitsLossManual(nn.Module):

@@ -12,13 +12,13 @@ class UNet(nn.Module):
             classes = cfg.target_size,
             activation = None,
         )
-
+    
     def forward(self, image):
         output = self.encoder(image)
         # output = output.squeeze(-1)
         return output[:,0]#.sigmoid()
     
-def build_model(cfg):
+def unet_build_model(cfg):
     from dotenv import load_dotenv
     load_dotenv()
 

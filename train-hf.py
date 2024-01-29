@@ -10,7 +10,7 @@ from utils.utils import Config, min_max_normalization, setup_seeds,\
                         get_date_time, SurfaceLoss,BCEWithLogitsLossManual,\
                         DiceLoss, norm_with_clip,add_noise
 from utils.dataset import KaggleDataset
-from models.unet import build_model
+from models.unet import unet_build_model
 from optimizer.loss import surface_dice
 from transformers import SwinConfig, SwinModel
 from transformers import AutoImageProcessor, SwinForMaskedImageModeling

@@ -7,7 +7,7 @@ import os
 
 from utils.utils import Config, min_max_normalization, setup_seeds, get_date_time
 from utils.dataset import KaggleDataset
-from models.unet import build_model
+from models.unet import unet_build_model
 from optimizer.loss import surface_dice
 
 class DiceLoss(nn.Module):
@@ -33,7 +33,7 @@ def main():
     val_dataset = KaggleDataset(cfg, mode='val')
     val_loader = DataLoader(val_dataset, batch_size=16, num_workers=cfg.num_workers)
 
-    model = build_model(cfg)
+    model = unet_build_model(cfg)
     model = DataParallel(model)
 
     loss_fn_1 = DiceLoss() # 和 BCEloss 加权 预训练 模型 医学 CT

@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from scipy.ndimage import label, sum_labels
 from utils.utils import Config, min_max_normalization, setup_seeds, get_date_time
 from utils.dataset import KaggleDataset
-from models.unet import build_model
+from models.unet import unet_build_model
 from optimizer.loss import surface_dice
 
 from transformers import AutoImageProcessor, ConvNextV2Model
