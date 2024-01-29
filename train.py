@@ -7,8 +7,8 @@ import os
 import torch.nn.functional as F
 from scipy.ndimage import label, sum_labels
 from utils.utils import Config, min_max_normalization, setup_seeds,\
-                        get_date_time, SurfaceLoss,BCEWithLogitsLossManual,\
-                        DiceLoss, norm_with_clip,add_noise
+                        get_date_time, SurfaceLoss, BCEWithLogitsLossManual,\
+                        DiceLoss, norm_with_clip, add_noise
 from utils.dataset import KaggleDataset
 from models.unet import build_model
 from optimizer.loss import surface_dice
@@ -20,7 +20,7 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=16, num_workers=cfg.num_workers)
     val_dataset = KaggleDataset(cfg, mode='val')
     val_loader = DataLoader(val_dataset, batch_size=16, num_workers=cfg.num_workers)
-
+    
     model = build_model(cfg)
     model = DataParallel(model)
 
@@ -35,7 +35,7 @@ def main():
     date, time = get_date_time()
     
     for epoch in range(cfg.epochs):
-        train_one_epoch(model, train_loader, loss_fn_1,loss_fn_1,  optimizer, scaler, scheduler, epoch, cfg)
+        train_one_epoch(model, train_loader, loss_fn_1, loss_fn_1, optimizer, scaler, scheduler, epoch, cfg)
         val(model, val_loader, loss_fn_1,loss_fn_1, epoch, cfg)
         model_dir = os.path.join(cfg.output_path, f'{cfg.model_name}_{date}_{time}_New_Unet')
         if not os.path.exists(model_dir):
@@ -96,7 +96,6 @@ def val(model, val_loader, loss_fn_1,loss_fn_2, epoch, cfg):
         iters.update()
     iters.close()
     
-
 
 if __name__ == '__main__':
     main()

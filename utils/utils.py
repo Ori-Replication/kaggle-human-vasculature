@@ -14,6 +14,7 @@ from torch import Tensor
 from scipy.ndimage import distance_transform_edt as distance
 from typing import Any, Callable, Iterable, List, Set, Tuple, TypeVar, Union
 import cv2
+import torch.nn.functional as F
 
 class Config:
     def __init__(self, cfg_path):
@@ -71,6 +72,7 @@ def norm_with_clip(x:torch.Tensor,smooth=1e-5):
 
 def add_noise(x:torch.Tensor,max_randn_rate=0.1,randn_rate=None,x_already_normed=False):
     """input.shape=(batch,f1,f2,...) output's var will be normalizate  """
+    # https://blog.csdn.net/chaosir1991/article/details/106960408
     ndim=x.ndim-1
     if x_already_normed:
         x_std=torch.ones([x.shape[0]]+[1]*ndim,device=x.device,dtype=x.dtype)
@@ -82,7 +84,7 @@ def add_noise(x:torch.Tensor,max_randn_rate=0.1,randn_rate=None,x_already_normed
     if randn_rate is None:
         randn_rate=max_randn_rate*np.random.rand()*torch.rand(x_mean.shape,device=x.device,dtype=x.dtype)
     cache=(x_std**2+(x_std*randn_rate)**2)**0.5
-    #https://blog.csdn.net/chaosir1991/article/details/106960408
+    
     
     return (x-x_mean+torch.randn(size=x.shape,device=x.device,dtype=x.dtype)*randn_rate*x_std)/(cache+1e-7)
 
