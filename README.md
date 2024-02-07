@@ -1,7 +1,6 @@
 # Code For CS182: Deep learning for blood vessel segmentation
 ## Introduction
 This is the code for shanghaitech CS182 Project from group 1. 
-Team member: 洪沐天，卫正轩，葛俊辉
 
 In this project, we used various models and different methods to segment vessels from 3D CT image.
 
